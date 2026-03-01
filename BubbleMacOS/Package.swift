@@ -9,9 +9,7 @@ let package = Package(
         .macOS(.v13)
     ],
     products: [
-        .executable(name: "Bubble", targets: ["BubbleMacOS"]),
-        .executable(name: "BubbleCLI", targets: ["BubbleCLI"]),
-        .library(name: "BubbleCore", targets: ["BubbleCore"])
+        .executable(name: "Bubble", targets: ["BubbleMacOS"])
     ],
     dependencies: [
     ],
