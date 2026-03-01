@@ -14,14 +14,14 @@
   <img src="https://img.shields.io/badge/License-MIT-orange" alt="License">
 </p>
 
-**Bubble** is the elite toolbox for AI builders. Version 0.0.2 introduces **Persistent Summaries**, bridging the gap between your local assets and AI IDEs with massive token savings and intelligent workspace awareness.
+**Bubble** is the elite toolbox for AI builders. Version 0.0.3 introduces **Persistent Summaries**, bridging the gap between your local assets and AI IDEs with massive token savings and intelligent workspace awareness.
 
 ---
 
 ## ⚡ 1-Minute Setup
 
 ### 🍏 macOS (Recommended)
-Download the latest **[Bubble.dmg](releases/Bubble.dmg)**, open it, and drag **Bubble** to your Applications folder.
+Download the latest **[Bubble.dmg](https://github.com/yuppii1/Bubble/releases/latest/download/Bubble.dmg)**, open it, and drag **Bubble** to your Applications folder.
 
 > [!NOTE]
 > **First Launch:** Since Bubble is an independent tool, macOS might show a security warning. To open it the first time: **Right-click (or Control-click) Bubble.app** in your Applications folder and select **Open**, then click **Open** again in the dialog.
