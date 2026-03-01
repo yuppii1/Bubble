@@ -4,7 +4,7 @@
 # Automates background art and icon layout using AppleScript.
 
 APP_NAME="Bubble"
-VERSION="0.0.3"
+VERSION="0.0.3.1"
 IMAGE_NAME="${APP_NAME}_${VERSION}_Installer"
 STAGING_DIR="dmg_staging"
 RELEASE_DIR="releases"

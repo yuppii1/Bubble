@@ -27,10 +27,15 @@ popd
 echo "📦 Packaging..."
 cp "BubbleMacOS/.build/arm64-apple-macosx/release/Bubble" "$APP_BUNDLE/Contents/MacOS/${APP_NAME}"
 
-# Copy SPM Resource Bundle if it exists
+# Copy resources directly to Contents/Resources for simpler access
+if [ -f "BubbleMacOS/Sources/BubbleMacOS/banner.png" ]; then
+    echo "🎨 Copying resources..."
+    cp "BubbleMacOS/Sources/BubbleMacOS/banner.png" "$APP_BUNDLE/Contents/Resources/"
+fi
+
+# Also copy SPM Resource Bundle as a fallback (some dependencies might need it)
 BUNDLE_SRC="BubbleMacOS/.build/arm64-apple-macosx/release/Bubble_BubbleMacOS.bundle"
 if [ -d "$BUNDLE_SRC" ]; then
-    echo "🎨 Copying resource bundle..."
     cp -R "$BUNDLE_SRC" "$APP_BUNDLE/Contents/Resources/"
 fi
 
@@ -51,7 +56,7 @@ cat <<EOF > "$APP_BUNDLE/Contents/Info.plist"
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.0.3</string>
+    <string>0.0.3.1</string>
     <key>CFBundleVersion</key>
     <string>2</string>
     <key>LSMinimumSystemVersion</key>

@@ -930,7 +930,7 @@ struct SettingsView: View {
                 VStack(spacing: 24) {
                     // Hero Header
                     ZStack(alignment: .bottomLeading) {
-                        Image("banner", bundle: .module)
+                        Image("banner")
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(height: 120)
@@ -944,7 +944,7 @@ struct SettingsView: View {
                                     LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom)
                                 )
                             
-                            Text("v0.0.3 • Toolbox for AI Builders")
+                            Text("v0.0.3.1 • Toolbox for AI Builders")
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundColor(.accentColor.opacity(0.9))
                         }

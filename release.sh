@@ -6,7 +6,7 @@
 PROJECT_NAME="bubble"
 BUILD_DIR="./releases"
 SOURCE_DIR="./BubbleLinuxGo"
-VERSION="0.0.3"
+VERSION="0.0.3.1"
 
 # Create releases directory
 mkdir -p $BUILD_DIR
