@@ -5,7 +5,7 @@
 # 🚀 Bubble
 
 <p align="center">
-  <b>made by <a href="https://github.com/jade-kwon">Jade Kwon</a></b>
+  <b>made by <a href="https://github.com/yuppii1">Jade Kwon</a></b>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 ## ⚡ 1-Minute Setup
 
 ### 🍏 macOS (Recommended)
-Download the latest **[Bubble.dmg](https://github.com/jade-kwon/bubble/releases/latest/download/Bubble.dmg)**, open it, and drag **Bubble** to your Applications folder.
+Download the latest **[Bubble.dmg](https://github.com/yuppii1/Bubble/releases/latest/download/Bubble.dmg)**, open it, and drag **Bubble** to your Applications folder.
 
 ### 🐧 Linux / Advanced
 If you have [Go](https://go.dev/dl/) installed, just run this to get started:
@@ -62,7 +62,7 @@ graph TD
 ## ⚙️ Detailed Platform Guides
 
 - **🍏 macOS App:** Open the `BubbleMacOS` folder in Xcode (it's a Swift Package) and press `Cmd+R` to run the Menu Bar app.
-- **🐧 Linux CLI:** High-performance Go binary (`bubble`) located in `BubbleLinuxGo`. Get pre-compiled versions for Linux, macOS, and Windows in the **[Releases](https://github.com/jade-kwon/bubble/releases)** section.
+- **🐧 Linux CLI:** High-performance Go binary (`bubble`) located in `BubbleLinuxGo`. Get pre-compiled versions for Linux, macOS, and Windows in the **[Releases](https://github.com/yuppii1/Bubble/releases)** section.
 - **Bridge / MCP:** Use the `bubble-mcp` server to let your AI agents (Claude, etc.) map your project instantly.
 
 ---
