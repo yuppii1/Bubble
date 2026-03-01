@@ -30,7 +30,7 @@ let package = Package(
             name: "BubbleCLI",
             dependencies: ["BubbleCore"],
             path: "Sources/BubbleMacOS",
-            exclude: ["AITagger.swift"],
+            exclude: ["AITagger.swift", "FolderMonitor.swift", "ClipboardService.swift", "banner.png"],
             sources: ["TestMain.swift"]
         )
     ]

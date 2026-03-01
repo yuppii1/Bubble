@@ -1,5 +1,5 @@
 import Foundation
-import AITaggerCore
+import BubbleCore
 
 @main
 struct AITaggerCLI {

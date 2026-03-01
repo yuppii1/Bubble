@@ -1,4 +1,4 @@
-module aitagger
+module bubble
 
 go 1.23.1
 

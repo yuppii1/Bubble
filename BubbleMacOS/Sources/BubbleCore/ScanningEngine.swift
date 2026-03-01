@@ -1,6 +1,20 @@
 import Foundation
 import CoreServices
 
+// MARK: - Models for Summary Persistence
+
+public struct FileSummary: Codable, Equatable {
+    public let summary: String
+    public let keywords: [String]
+    public let lastProcessed: Date
+    public let fileSize: Int64
+    public let modificationDate: Date
+}
+
+public struct ProjectSummary: Codable {
+    public var files: [String: FileSummary] = [:]
+}
+
 public actor ScanningEngine {
     private let fileManager = FileManager.default
     private let processingQueue = DispatchQueue(label: "com.gemini.ai.scanner", qos: .utility)
@@ -9,10 +23,10 @@ public actor ScanningEngine {
     
     // Ignore patterns
     private let ignoreExtensions = ["app", "dSYM", "framework", "xctest", "o", "a", "dylib", "so", "dll", "class", "pyc", "png", "jpg", "jpeg", "gif", "pdf", "zip", "tar", "gz"]
-    private let ignoreDirectories = [".git", ".svn", "node_modules", "build", "dist", ".gemini"]
+    private let ignoreDirectories = [".git", ".svn", "node_modules", "build", "dist", ".gemini", ".bubble"]
     
     public func scanAndTag(folder: URL, provider: LLMProvider, configuration: LLMConfiguration, onProgress: @escaping (String) -> Void) async {
-        let enumerator = fileManager.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey, .isHiddenKey, .contentModificationDateKey], options: [.skipsHiddenFiles, .skipsPackageDescendants])
+        let enumerator = fileManager.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey, .isHiddenKey, .contentModificationDateKey, .fileSizeKey], options: [.skipsHiddenFiles, .skipsPackageDescendants])
         
         let service: LLMService
         switch provider {
@@ -22,7 +36,18 @@ public actor ScanningEngine {
         case .ollama: service = OllamaService()
         }
         
+        // Load existing summaries
+        let bubbleDir = folder.appendingPathComponent(".bubble")
+        let summariesURL = bubbleDir.appendingPathComponent("summaries.json")
+        var projectSummary = ProjectSummary()
+        
+        if let data = try? Data(contentsOf: summariesURL),
+           let decoded = try? JSONDecoder().decode(ProjectSummary.self, from: data) {
+            projectSummary = decoded
+        }
+        
         var filesToProcess: [URL] = []
+        var filesToSkip: Int = 0
         
         while let fileURL = enumerator?.nextObject() as? URL {
             if fileURL.hasDirectoryPath {
@@ -30,13 +55,33 @@ public actor ScanningEngine {
                      enumerator?.skipDescendants()
                  }
                  continue
-            }
+             }
             
             guard shouldProcess(fileURL) else { continue }
+            
+            let relativePath = fileURL.path.replacingOccurrences(of: folder.path + "/", with: "")
+            
+            // Check if we already have a valid summary
+            if let existing = projectSummary.files[relativePath] {
+                let attrs = try? fileManager.attributesOfItem(atPath: fileURL.path)
+                let modDate = attrs?[.modificationDate] as? Date ?? Date.distantPast
+                let size = attrs?[.size] as? Int64 ?? 0
+                
+                if existing.modificationDate == modDate && existing.fileSize == size {
+                    filesToSkip += 1
+                    continue
+                }
+            }
+            
             filesToProcess.append(fileURL)
         }
         
-        onProgress("Found \(filesToProcess.count) eligible files.")
+        onProgress("Found \(filesToProcess.count) new/updated files (skipped \(filesToSkip)).")
+        
+        if filesToProcess.isEmpty {
+            onProgress("Scan Complete (Everything up to date)!")
+            return
+        }
         
         for (index, fileURL) in filesToProcess.enumerated() {
             if Task.isCancelled { break }
@@ -46,7 +91,6 @@ public actor ScanningEngine {
             do {
                 let content = try String(contentsOf: fileURL, encoding: .utf8)
                 
-                // Gemini might need more delay than local Ollama, but let's keep it safe.
                 if provider == .gemini {
                     try await Task.sleep(nanoseconds: 1_000_000_000) 
                 }
@@ -54,6 +98,25 @@ public actor ScanningEngine {
                 let (summary, keywords) = try await service.generateTags(for: content, configuration: configuration)
                 
                 try writeMetadata(to: fileURL, summary: summary, keywords: keywords)
+                
+                // Update persistent cache
+                let relativePath = fileURL.path.replacingOccurrences(of: folder.path + "/", with: "")
+                let attrs = try? fileManager.attributesOfItem(atPath: fileURL.path)
+                let modDate = attrs?[.modificationDate] as? Date ?? Date.distantPast
+                let size = attrs?[.size] as? Int64 ?? 0
+                
+                projectSummary.files[relativePath] = FileSummary(
+                    summary: summary,
+                    keywords: keywords,
+                    lastProcessed: Date(),
+                    fileSize: size,
+                    modificationDate: modDate
+                )
+                
+                // Save periodically (every 5 files) or at the end
+                if (index + 1) % 5 == 0 || index == filesToProcess.count - 1 {
+                    try saveSummaries(projectSummary, to: summariesURL)
+                }
                 
                 print("Tagged: \(fileURL.lastPathComponent)")
             } catch {
@@ -64,18 +127,25 @@ public actor ScanningEngine {
         onProgress("Scan Complete!")
     }
     
+    private func saveSummaries(_ summary: ProjectSummary, to url: URL) throws {
+        let bubbleDir = url.deletingLastPathComponent()
+        if !fileManager.fileExists(atPath: bubbleDir.path) {
+            try fileManager.createDirectory(at: bubbleDir, withIntermediateDirectories: true)
+            // Try to make it hidden on macOS
+            var urlWithHidden = bubbleDir
+            var resourceValues = URLResourceValues()
+            resourceValues.isHidden = true
+            try urlWithHidden.setResourceValues(resourceValues)
+        }
+        
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        let data = try encoder.encode(summary)
+        try data.write(to: url)
+    }
+    
     private func shouldProcess(_ url: URL) -> Bool {
-        // Extension check
         if ignoreExtensions.contains(url.pathExtension.lowercased()) { return false }
-        
-        // Check if already processed recently?
-        // For MVP, we'll re-process if the file modification date > last processed date.
-        // But for now, let's just check if it has the xattr already to save API calls.
-        // If the user wants to force re-scan, they can clear xattrs manually or we add a force flag.
-        
-        // Check if file is text readable (simple heuristic)
-        // rigorous check would use UTType but let's trust extension + try-read
-        
         return true
     }
     
@@ -88,8 +158,6 @@ public actor ScanningEngine {
         try url.setExtendedAttribute(data: keywordsData, forName: "com.gemini.ai.keywords")
         try url.setExtendedAttribute(data: timestampData, forName: "com.gemini.ai.last_processed")
         
-        // Write to native macOS Finder Tags (Spotlight searchable)
-        // Finder tags are stored as a binary plist array of strings in the `com.apple.metadata:_kMDItemUserTags` xattr
         do {
             let plistData = try PropertyListSerialization.data(fromPropertyList: keywords, format: .binary, options: 0)
             try url.setExtendedAttribute(data: plistData, forName: "com.apple.metadata:_kMDItemUserTags")

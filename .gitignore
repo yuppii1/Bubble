@@ -27,7 +27,7 @@ vendor/
 
 # release/build
 build/
-# release/
+release/
 dmg_staging/
 Bubble_Installer_temp.dmg
 

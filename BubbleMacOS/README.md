@@ -1,10 +1,11 @@
-# AI Metadata Tagger for macOS
+# Bubble for macOS
 
-A menu bar application that scans selected folders, analyzes file content using Gemini AI, and tags them with metadata (Extended Attributes) for easier retrieval by AI agents and Spotlight.
+A menu bar application that scans selected folders, analyzes file content using Gemini AI, and tags them with metadata.
 
 ## Features
 - **AI-Powered Tagging:** Automatically generates summaries and keywords for your files.
-- **Native Integration:** Stores tags in macOS Extended Attributes (`com.gemini.ai.summary`, `com.gemini.ai.keywords`).
+- **Persistent Summaries:** Version 0.0.2 introduces local `.bubble/summaries.json` for massive token savings.
+- **Native Integration:** Stores tags in macOS Extended Attributes (`user.summary`, `user.keywords`).
 - **Unobtrusive:** Runs in the menu bar.
 - **Privacy-Focused:** Only scans folders you select. API Key stored locally.
 
@@ -16,23 +17,14 @@ A menu bar application that scans selected folders, analyzes file content using 
 
 1.  **Build the App:**
     ```bash
-    cd AITagger
-    swift build -c release
+    ./build_macos.sh
     ```
-    The binary will be at `.build/release/AITagger`.
+    The app bundle will be at `build/Bubble.app`.
 
-2.  **Run:**
-    You can run it directly from terminal to see logs, or wrap it in an App Bundle.
-    ```bash
-    ./.build/release/AITagger
-    ```
-
-3.  **Using the App:**
-    - Click the Menu Bar icon (Tag symbol).
-    - Go to **Set API Key...** and paste your Gemini API Key.
-    - Click **Select Folder to Scan...** and choose a directory containing text/code files.
-    - The status will change to "Scanning...".
-    - Once finished, files in that folder will have metadata attached.
+2.  **Using the App:**
+    - Click the Menu Bar icon (Bubble symbol).
+    - Select a provider and enter your API Key.
+    - Click **Select Folder to Scan...** and choose a directory.
 
 4.  **Verifying Tags:**
     Open Terminal and check a processed file:

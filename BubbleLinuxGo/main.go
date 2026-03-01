@@ -11,24 +11,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
-
-	"golang.org/x/sys/unix"
 )
 
-// --- Models ---
-
-type LLMConfiguration struct {
-	APIKey string
-	Model  string
-}
-
-type TagResult struct {
-	Summary  string
-	Keywords []string
-}
+// --- LLM Providers ---
 
 type LLMProvider string
 
@@ -280,129 +267,46 @@ func parseResponse(text string) *TagResult {
 	return result
 }
 
-func writeMetadata(path string, res *TagResult) error {
-	// Use 'user.' namespace for Linux extended attributes
-	summaryKey := "user.summary"
-	keywordsKey := "user.keywords"
+// --- Persistence ---
 
-	err := unix.Setxattr(path, summaryKey, []byte(res.Summary), 0)
-	if err != nil {
-		return fmt.Errorf("failed to set summary xattr: %w", err)
+type FileSummary struct {
+	Summary          string    `json:"summary"`
+	Keywords         []string  `json:"keywords"`
+	LastProcessed    time.Time `json:"lastProcessed"`
+	FileSize         int64     `json:"fileSize"`
+	ModificationDate time.Time `json:"modificationDate"`
+}
+
+type ProjectSummary struct {
+	Files map[string]FileSummary `json:"files"`
+}
+
+func saveProjectSummary(root string, summary *ProjectSummary) error {
+	bubbleDir := filepath.Join(root, ".bubble")
+	if err := os.MkdirAll(bubbleDir, 0755); err != nil {
+		return err
 	}
 
-	keywordsStr := strings.Join(res.Keywords, ", ")
-	err = unix.Setxattr(path, keywordsKey, []byte(keywordsStr), 0)
-	if err != nil {
-		return fmt.Errorf("failed to set keywords xattr: %w", err)
-	}
-
-	return nil
-}
-
-// --- Configuration Persistence ---
-
-type Config struct {
-	Providers map[string]ProviderConfig `json:"providers"`
-	Active    string                    `json:"active_provider"`
-}
-
-type ProviderConfig struct {
-	APIKey string `json:"api_key"`
-	Model  string `json:"model"`
-}
-
-func getConfigPath() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".bubble_config.json")
-}
-
-func loadConfig() *Config {
-	path := getConfigPath()
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return &Config{Providers: make(map[string]ProviderConfig)}
-	}
-	var conf Config
-	json.Unmarshal(data, &conf)
-	if conf.Providers == nil {
-		conf.Providers = make(map[string]ProviderConfig)
-	}
-	return &conf
-}
-
-func saveConfig(conf *Config) error {
-	path := getConfigPath()
-	data, err := json.MarshalIndent(conf, "", "  ")
+	path := filepath.Join(bubbleDir, "summaries.json")
+	data, err := json.MarshalIndent(summary, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0600)
+	return os.WriteFile(path, data, 0644)
 }
 
-// --- Metadata Extraction ---
-
-type FileMetadata struct {
-	Path    string   `json:"path"`
-	Summary string   `json:"summary"`
-	Tags    []string `json:"tags"`
-}
-
-func getMetadata(path string) (*FileMetadata, error) {
-	summary := ""
-	tags := []string{}
-
-	// On macOS, try to read Finder comments first
-	if runtime.GOOS == "darwin" {
-		// xattr -p com.apple.metadata:kMDItemFinderComment path
-		data, err := getXattr(path, "com.apple.metadata:kMDItemFinderComment")
-		if err == nil {
-			summary = string(data)
-		}
-	}
-
-	// Try Linux/Generic xattrs
-	if summary == "" {
-		data, err := getXattr(path, "user.summary")
-		if err == nil {
-			summary = string(data)
-		}
-	}
-
-	data, err := getXattr(path, "user.keywords")
-	if err == nil {
-		tagStr := string(data)
-		parts := strings.Split(tagStr, ",")
-		for _, p := range parts {
-			t := strings.TrimSpace(p)
-			if t != "" {
-				tags = append(tags, t)
-			}
-		}
-	}
-
-	if summary == "" && len(tags) == 0 {
-		return nil, fmt.Errorf("no metadata found")
-	}
-
-	return &FileMetadata{
-		Path:    path,
-		Summary: summary,
-		Tags:    tags,
-	}, nil
-}
-
-func getXattr(path, attr string) ([]byte, error) {
-	// Size check first
-	size, err := unix.Getxattr(path, attr, nil)
-	if err != nil || size <= 0 {
-		return nil, err
-	}
-	dest := make([]byte, size)
-	_, err = unix.Getxattr(path, attr, dest)
+func loadProjectSummary(root string) *ProjectSummary {
+	path := filepath.Join(root, ".bubble", "summaries.json")
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return &ProjectSummary{Files: make(map[string]FileSummary)}
 	}
-	return dest, nil
+	var summary ProjectSummary
+	json.Unmarshal(data, &summary)
+	if summary.Files == nil {
+		summary.Files = make(map[string]FileSummary)
+	}
+	return &summary
 }
 
 // --- MCP Server Implementation ---
@@ -646,6 +550,7 @@ func main() {
 	ignoreDirs := map[string]bool{
 		".git":          true,
 		".gemini":       true,
+		".bubble":       true,
 		"node_modules":  true,
 		"build":         true,
 		"dist":          true,
@@ -682,12 +587,38 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Found %d eligible files.\n", len(filesToProcess))
-	fmt.Printf("Using %s provider with model %s\n", *providerStr, finalModel)
+	// Load existing summaries
+	projectSummary := loadProjectSummary(*folder)
 
-	for i, path := range filesToProcess {
+	var filesToProcessFiltered []string
+	filesToSkip := 0
+
+	for _, path := range filesToProcess {
+		relPath, _ := filepath.Rel(*folder, path)
+		info, err := os.Stat(path)
+		if err == nil {
+			if existing, exists := projectSummary.Files[relPath]; exists {
+				if existing.ModificationDate.Equal(info.ModTime()) && existing.FileSize == info.Size() {
+					filesToSkip++
+					continue
+				}
+			}
+		}
+		filesToProcessFiltered = append(filesToProcessFiltered, path)
+	}
+
+	fmt.Printf("Found %d new/updated files (skipped %d).\n", len(filesToProcessFiltered), filesToSkip)
+
+	if len(filesToProcessFiltered) == 0 {
+		fmt.Println("Everything up to date.")
+		return
+	}
+
+	fmt.Printf("Using %s provider with model %s\n", finalProvider, finalModel)
+
+	for i, path := range filesToProcessFiltered {
 		if *verbose {
-			fmt.Printf("[%d/%d] Processing %s...\n", i+1, len(filesToProcess), filepath.Base(path))
+			fmt.Printf("[%d/%d] Processing %s...\n", i+1, len(filesToProcessFiltered), filepath.Base(path))
 		}
 
 		content, err := os.ReadFile(path)
@@ -697,7 +628,9 @@ func main() {
 		}
 
 		// Sleep to avoid rate limits
-		time.Sleep(1 * time.Second)
+		if LLMProvider(finalProvider) == ProviderGemini {
+			time.Sleep(1 * time.Second)
+		}
 
 		res, err := service.GenerateTags(string(content), config)
 		if err != nil {
@@ -708,6 +641,22 @@ func main() {
 		if err := writeMetadata(path, res); err != nil {
 			fmt.Printf("❌ Failed to write metadata for %s: %v\n", path, err)
 			continue
+		}
+
+		// Update persistence
+		relPath, _ := filepath.Rel(*folder, path)
+		info, _ := os.Stat(path)
+		projectSummary.Files[relPath] = FileSummary{
+			Summary:          res.Summary,
+			Keywords:         res.Keywords,
+			LastProcessed:    time.Now(),
+			FileSize:         info.Size(),
+			ModificationDate: info.ModTime(),
+		}
+
+		// Save periodically
+		if (i+1)%5 == 0 || i == len(filesToProcessFiltered)-1 {
+			saveProjectSummary(*folder, projectSummary)
 		}
 
 		fmt.Printf("✅ Tagged: %s\n", filepath.Base(path))

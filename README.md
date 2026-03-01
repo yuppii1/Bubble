@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/License-MIT-orange" alt="License">
 </p>
 
-**Bubble** is the elite toolbox for AI builders. It bridges the gap between your local assets and AI IDEs, providing "magic" utilities like terminal-ready image pasting and intelligent workspace awareness.
+**Bubble** is the elite toolbox for AI builders. Version 0.0.2 introduces **Persistent Summaries**, bridging the gap between your local assets and AI IDEs with massive token savings and intelligent workspace awareness.
 
 ---
 
