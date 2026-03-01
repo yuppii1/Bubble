@@ -1,0 +1,33 @@
+# OS generated files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+
+# Swift / Xcode
+.build/
+Packages/
+Package.resolved
+.swiftpm/
+DerivedData/
+*.xcworkspace/
+.orbit/
+
+# Go
+bin/
+aitagger
+aitagger-*
+go.sum
+vendor/
+
+# Local Config & Secrets
+.aitagger_config.json
+.env
+
+# release/build
+build/
+release/
+dmg_staging/
+Bubble_Installer_temp.dmg
+
