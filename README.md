@@ -21,7 +21,10 @@
 ## ⚡ 1-Minute Setup
 
 ### 🍏 macOS (Recommended)
-Download the latest **[Bubble.dmg](https://github.com/yuppii1/Bubble/releases/latest/download/Bubble.dmg)**, open it, and drag **Bubble** to your Applications folder.
+Download the latest **[Bubble.dmg](releases/Bubble.dmg)**, open it, and drag **Bubble** to your Applications folder.
+
+> [!NOTE]
+> **First Launch:** Since Bubble is an independent tool, macOS might show a security warning. To open it the first time: **Right-click (or Control-click) Bubble.app** in your Applications folder and select **Open**, then click **Open** again in the dialog.
 
 ### 🐧 Linux / Advanced
 If you have [Go](https://go.dev/dl/) installed, just run this to get started:

@@ -908,12 +908,12 @@ struct CardView<Content: View>: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 }
@@ -923,11 +923,7 @@ struct SettingsView: View {
     
     var body: some View {
         ZStack {
-            // Iridescent Background
-            LinearGradient(colors: [
-                Color(red: 0.05, green: 0.05, blue: 0.1),
-                Color(red: 0.1, green: 0.05, blue: 0.2)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
+            Color(NSColor.windowBackgroundColor)
             .ignoresSafeArea()
             
             ScrollView {
@@ -945,10 +941,10 @@ struct SettingsView: View {
                             Text("Bubble")
                                 .font(.system(size: 32, weight: .black, design: .rounded))
                                 .foregroundStyle(
-                                    LinearGradient(colors: [.white, .white.opacity(0.8)], startPoint: .top, endPoint: .bottom)
+                                    LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom)
                                 )
                             
-                            Text("v1.0 • Toolbox for AI Builders")
+                            Text("v0.0.2 • Toolbox for AI Builders")
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundColor(.accentColor.opacity(0.9))
                         }
@@ -979,14 +975,12 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         // Section: Integrations
                         CardView(title: "Integrations") {
-                            VStack(spacing: 0) {
+                            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 0) {
                                 IntegrationRow(
                                     name: "Claude Desktop",
                                     isInstalled: appState.isGlobalMCPInstalled,
                                     action: { appState.installGlobalMCP() }
                                 )
-                                
-                                Divider().padding(.vertical, 8)
                                 
                                 IntegrationRow(
                                     name: "Antigravity",
@@ -994,27 +988,27 @@ struct SettingsView: View {
                                     action: { appState.installAntigravityMCP() }
                                 )
                                 
-                                Divider().padding(.vertical, 8)
-                                
                                 IntegrationRow(
                                     name: "Claude Code Skill",
                                     isInstalled: appState.isClaudeCodeSkillInstalled,
                                     action: { appState.installClaudeCodeSkill() }
                                 )
                                 
-                                Divider().padding(.vertical, 8)
-                                
-                                HStack {
-                                    Label("Workspace MCPs", systemImage: "folder.badge.gearshape")
-                                        .font(.body)
-                                    Spacer()
-                                    Text("\(appState.installedWorkspaceMCPs.values.filter{$0}.count) folders")
-                                        .font(.caption)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 2)
-                                        .background(Color.accentColor.opacity(0.2))
-                                        .cornerRadius(4)
+                                GridRow {
+                                    HStack {
+                                        Label("Workspace MCPs", systemImage: "folder.badge.gearshape")
+                                            .font(.body)
+                                        Spacer()
+                                        Text("\(appState.installedWorkspaceMCPs.values.filter{$0}.count) folders")
+                                            .font(.caption)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 2)
+                                            .background(Color.accentColor.opacity(0.2))
+                                            .cornerRadius(4)
+                                    }
+                                    .gridCellColumns(2)
                                 }
+                                .padding(.top, 8)
                             }
                         }
 
@@ -1100,7 +1094,7 @@ struct SettingsView: View {
                                                         .foregroundColor(.secondary)
                                                 }
                                                 .padding(8)
-                                                .background(Color.white.opacity(0.05))
+                                                .background(Color.primary.opacity(0.03))
                                                 .cornerRadius(6)
                                             }
                                         }
@@ -1128,11 +1122,12 @@ struct SettingsView: View {
                                 Divider()
                                 GridRow {
                                     Text("Storage")
-                                    TextField("~/Pictures/Bubble", text: $appState.imageStorageDir)
+                                    TextField("Selection required", text: $appState.imageStorageDir)
                                         .textFieldStyle(.plain)
                                         .padding(8)
                                         .background(Color.black.opacity(0.2))
                                         .cornerRadius(6)
+                                        .disabled(true)
                                 }
                                 Divider()
                                 GridRow {
@@ -1166,7 +1161,7 @@ struct SettingsView: View {
             content
                 .textFieldStyle(.plain)
                 .padding(8)
-                .background(Color.white.opacity(0.05))
+                .background(Color.primary.opacity(0.03))
                 .cornerRadius(8)
         }
     }
@@ -1247,8 +1242,8 @@ struct FolderAutomationRow: View {
             }
         }
         .padding(16)
-        .background(Color.white.opacity(0.03))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.05), lineWidth: 1))
+        .background(Color.primary.opacity(0.02))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.05), lineWidth: 1))
     }
 }
 
