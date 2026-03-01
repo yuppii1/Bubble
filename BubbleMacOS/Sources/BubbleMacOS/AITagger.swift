@@ -944,7 +944,7 @@ struct SettingsView: View {
                                     LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom)
                                 )
                             
-                            Text("v0.0.2 • Toolbox for AI Builders")
+                            Text("v0.0.3 • Toolbox for AI Builders")
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundColor(.accentColor.opacity(0.9))
                         }
